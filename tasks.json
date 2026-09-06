@@ -23,6 +23,14 @@
       "done": false,
       "createdAt": "2026-09-06T16:30:53.007Z",
       "doneAt": null
+    },
+    {
+      "id": "mtq140iz0z234q",
+      "text": "fix worldguard on rulebook, in-depth books, and book of roles at spawn",
+      "addedBy": "ivy",
+      "done": false,
+      "createdAt": "2026-09-06T16:31:25.355Z",
+      "doneAt": null
     }
   ]
 }
