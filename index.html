@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Villagepeace Tasks</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #f3f6f3;
+    --surface: #ffffff;
+    --surface-2: #eaf0ea;
+    --border: #d7e0d6;
+    --text: #1b231d;
+    --text-dim: #5d6b60;
+    --text-faint: #8a978c;
+    --accent: #2f8f52;
+    --accent-strong: #206b3c;
+    --danger: #b3453a;
+    --danger-wash: #f7e9e7;
+    --shadow: 0 1px 2px rgba(20, 30, 22, 0.06), 0 8px 24px rgba(20, 30, 22, 0.05);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141915; --surface: #1b211c; --surface-2: #212821; --border: #2c352d;
+      --text: #e7ede7; --text-dim: #9aab9c; --text-faint: #647065;
+      --accent: #57c47d; --accent-strong: #7bd99c;
+      --danger: #e08278; --danger-wash: #3a2422;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141915; --surface: #1b211c; --surface-2: #212821; --border: #2c352d;
+    --text: #e7ede7; --text-dim: #9aab9c; --text-faint: #647065;
+    --accent: #57c47d; --accent-strong: #7bd99c;
+    --danger: #e08278; --danger-wash: #3a2422;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  #gate, #keygate {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px; z-index: 50;
+  }
+  #keygate { display: none; }
+  .gate-card {
+    width: 100%; max-width: 400px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow);
+    padding: 32px 28px;
+  }
+  .gate-eyebrow {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 6px;
+  }
+  .gate-card h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .gate-card p { color: var(--text-dim); font-size: 13.5px; margin: 0 0 20px; line-height: 1.5; }
+  .gate-card input {
+    width: 100%; font: inherit; font-family: "IBM Plex Mono", monospace;
+    padding: 11px 13px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text); letter-spacing: 0.04em;
+  }
+  .gate-card input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .gate-btn {
+    margin-top: 12px; width: 100%; font: inherit; font-weight: 600; font-size: 14px;
+    padding: 11px 13px; border-radius: 7px; border: none;
+    background: var(--accent); color: #fff; cursor: pointer;
+  }
+  .gate-btn:hover { background: var(--accent-strong); }
+  .gate-btn.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  .gate-error { margin-top: 10px; font-size: 12.5px; color: var(--danger); min-height: 1em; }
+
+  #app { display: none; }
+  #app[data-unlocked="true"] { display: block; }
+  .wrap { max-width: 700px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  header.top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  .brand-eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 0 0 4px; }
+  header.top h1 { font-size: 26px; margin: 0; letter-spacing: -0.01em; }
+  .top-actions { display: flex; align-items: center; gap: 8px; }
+  .count-pill { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; color: var(--text-dim); background: var(--surface-2); border: 1px solid var(--border); padding: 5px 11px; border-radius: 999px; white-space: nowrap; }
+  .count-pill b { color: var(--text); font-weight: 600; }
+  .icon-btn {
+    font: inherit; font-size: 12px; font-family: "IBM Plex Mono", monospace;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim);
+    padding: 5px 10px; border-radius: 999px; cursor: pointer;
+  }
+  .icon-btn:hover { color: var(--text); }
+
+  .add-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); padding: 16px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 10px; }
+  .add-row { display: flex; gap: 8px; }
+  .add-row input[type="text"] { flex: 1; min-width: 0; font: inherit; font-size: 14.5px; padding: 10px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); }
+  #taskName { width: 150px; flex: none; font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
+  .add-row input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .add-btn { font: inherit; font-weight: 600; font-size: 13.5px; padding: 10px 16px; border-radius: 7px; border: none; background: var(--accent); color: #fff; cursor: pointer; white-space: nowrap; }
+  .add-btn:hover { background: var(--accent-strong); }
+  .add-btn:disabled { opacity: 0.6; cursor: default; }
+  .add-hint { font-size: 11.5px; color: var(--text-faint); font-family: "IBM Plex Mono", monospace; }
+
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .task { display: flex; align-items: flex-start; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 13px 14px; }
+  .task[data-done="true"] { opacity: 0.6; }
+  .check { flex: none; width: 20px; height: 20px; margin-top: 1px; border-radius: 6px; border: 1.5px solid var(--border); background: var(--surface-2); cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; }
+  .task[data-done="true"] .check { background: var(--accent); border-color: var(--accent); }
+  .task-body { flex: 1; min-width: 0; }
+  .task-text { font-size: 14.5px; line-height: 1.45; word-wrap: break-word; }
+  .task[data-done="true"] .task-text { text-decoration: line-through; color: var(--text-dim); }
+  .task-meta { margin-top: 4px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--text-faint); display: flex; gap: 10px; flex-wrap: wrap; }
+  .task-meta .who { color: var(--accent); }
+  .del-btn { flex: none; background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 16px; padding: 2px 4px; line-height: 1; border-radius: 5px; }
+  .del-btn:hover { color: var(--danger); background: var(--danger-wash); }
+
+  .empty { text-align: center; padding: 48px 20px; color: var(--text-faint); font-size: 13.5px; }
+  .status { text-align: center; padding: 40px 20px; color: var(--text-faint); font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
+  .banner { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 12.5px; color: var(--text-dim); margin-bottom: 16px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-card">
+    <p class="gate-eyebrow mono">Villagepeace &middot; Staff Access</p>
+    <h1>Task Board</h1>
+    <p>Enter the admin password to view and add tasks. Everyone on staff shares the same board.</p>
+    <input id="pw" type="password" placeholder="Password" autocomplete="off">
+    <button class="gate-btn" id="pwSubmit">Unlock</button>
+    <p class="gate-error" id="pwError"></p>
+  </div>
+</div>
+
+<div id="keygate">
+  <div class="gate-card">
+    <p class="gate-eyebrow mono">One-time setup</p>
+    <h1>Add your write key</h1>
+    <p>Viewing tasks works for anyone with the password, but adding, checking off, or deleting a task needs the shared GitHub write key. Paste it below - it's saved only in this browser, never sent anywhere except GitHub's API.</p>
+    <input id="tokenInput" type="password" placeholder="github_pat_..." autocomplete="off">
+    <button class="gate-btn" id="tokenSubmit">Save key</button>
+    <button class="gate-btn secondary" id="tokenSkip">Just viewing for now</button>
+    <p class="gate-error" id="tokenError"></p>
+  </div>
+</div>
+
+<div id="app">
+  <div class="wrap">
+    <header class="top">
+      <div>
+        <p class="brand-eyebrow mono">Villagepeace &middot; Staff</p>
+        <h1>Task Board</h1>
+      </div>
+      <div class="top-actions">
+        <div class="count-pill mono" id="countPill">&mdash;</div>
+        <button class="icon-btn" id="keyBtn">Key</button>
+      </div>
+    </header>
+
+    <div class="banner" id="readonlyBanner" style="display:none;">
+      Viewing only - <a href="#" id="addKeyLink">add your write key</a> to add or change tasks.
+    </div>
+
+    <div class="add-card">
+      <div class="add-row">
+        <input type="text" id="taskText" placeholder="Add a task&hellip;" maxlength="300">
+        <input type="text" id="taskName" placeholder="Your name" maxlength="24">
+        <button class="add-btn" id="addBtn">Add</button>
+      </div>
+      <p class="add-hint">Stored in the villagepeace-tasks GitHub repo &middot; press Enter to add</p>
+    </div>
+
+    <div class="list" id="list">
+      <div class="status">Loading tasks&hellip;</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const PASSWORD = "VILLAGEPEACE12345";
+  const REPO = "kalakaritzu/villagepeace-tasks";
+  const FILE_PATH = "tasks.json";
+  const API_BASE = "https://api.github.com/repos/" + REPO + "/contents/" + FILE_PATH;
+
+  const gate = document.getElementById("gate");
+  const keygate = document.getElementById("keygate");
+  const app = document.getElementById("app");
+
+  // ---------- utf-8 safe base64 ----------
+  function b64Encode(str) {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (m, p1) => String.fromCharCode(parseInt(p1, 16))));
+  }
+  function b64Decode(str) {
+    return decodeURIComponent(atob(str.replace(/\n/g, "")).split("").map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join(""));
+  }
+
+  function getToken() {
+    try { return localStorage.getItem("vp_tasks_token") || ""; } catch (e) { return ""; }
+  }
+  function setToken(t) {
+    try { localStorage.setItem("vp_tasks_token", t); } catch (e) {}
+  }
+
+  // ---------- password gate ----------
+  const pwInput = document.getElementById("pw");
+  const pwError = document.getElementById("pwError");
+  document.getElementById("pwSubmit").addEventListener("click", tryUnlock);
+  pwInput.addEventListener("keydown", (e) => { if (e.key === "Enter") tryUnlock(); });
+  function tryUnlock() {
+    if (pwInput.value === PASSWORD) {
+      try { localStorage.setItem("vp_tasks_unlocked", "1"); } catch (e) {}
+      afterPassword();
+    } else {
+      pwError.textContent = "Incorrect password.";
+      pwInput.value = "";
+      pwInput.focus();
+    }
+  }
+
+  function afterPassword() {
+    gate.style.display = "none";
+    app.setAttribute("data-unlocked", "true");
+    initBoard();
+  }
+
+  let alreadyIn = false;
+  try { alreadyIn = localStorage.getItem("vp_tasks_unlocked") === "1"; } catch (e) {}
+  if (alreadyIn) { afterPassword(); } else { pwInput.focus(); }
+
+  // ---------- key gate (lazy, only when a write is attempted) ----------
+  const tokenInput = document.getElementById("tokenInput");
+  const tokenError = document.getElementById("tokenError");
+  let pendingWrite = null;
+  function requireKey(action) {
+    if (getToken()) { action(); return; }
+    pendingWrite = action;
+    keygate.style.display = "flex";
+    tokenInput.focus();
+  }
+  document.getElementById("tokenSubmit").addEventListener("click", () => {
+    const t = tokenInput.value.trim();
+    if (!t) { tokenError.textContent = "Paste your key first."; return; }
+    setToken(t);
+    keygate.style.display = "none";
+    document.getElementById("readonlyBanner").style.display = "none";
+    const run = pendingWrite; pendingWrite = null;
+    if (run) run();
+  });
+  document.getElementById("tokenSkip").addEventListener("click", () => {
+    keygate.style.display = "none";
+    pendingWrite = null;
+  });
+  document.getElementById("keyBtn").addEventListener("click", () => {
+    tokenInput.value = getToken();
+    keygate.style.display = "flex";
+    tokenInput.focus();
+  });
+  document.getElementById("addKeyLink").addEventListener("click", (e) => {
+    e.preventDefault();
+    keygate.style.display = "flex";
+    tokenInput.focus();
+  });
+
+  // ---------- board ----------
+  let boardStarted = false;
+  let currentSha = null;
+  let pollTimer = null;
+
+  function initBoard() {
+    if (boardStarted) return;
+    boardStarted = true;
+
+    const listEl = document.getElementById("list");
+    const countPill = document.getElementById("countPill");
+    const textInput = document.getElementById("taskText");
+    const nameInput = document.getElementById("taskName");
+    const addBtn = document.getElementById("addBtn");
+    const readonlyBanner = document.getElementById("readonlyBanner");
+
+    if (!getToken()) readonlyBanner.style.display = "block";
+
+    try { nameInput.value = localStorage.getItem("vp_tasks_name") || ""; } catch (e) {}
+
+    function authHeaders(extra) {
+      const h = Object.assign({ "Accept": "application/vnd.github+json" }, extra || {});
+      const t = getToken();
+      if (t) h["Authorization"] = "Bearer " + t;
+      return h;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    function fmtTime(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (isNaN(d)) return "";
+      const now = new Date();
+      const sameDay = d.toDateString() === now.toDateString();
+      const time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      if (sameDay) return time;
+      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " + time;
+    }
+
+    async function loadTasks() {
+      const res = await fetch(API_BASE + "?t=" + Date.now(), { headers: authHeaders() });
+      if (!res.ok) throw new Error("load_failed_" + res.status);
+      const body = await res.json();
+      currentSha = body.sha;
+      const parsed = JSON.parse(b64Decode(body.content));
+      return Array.isArray(parsed.tasks) ? parsed.tasks : [];
+    }
+
+    async function saveTasks(tasks, message) {
+      const payload = { tasks: tasks };
+      const body = {
+        message: message,
+        content: b64Encode(JSON.stringify(payload, null, 2)),
+        sha: currentSha
+      };
+      const res = await fetch(API_BASE, { method: "PUT", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body) });
+      if (res.status === 409 || res.status === 422) {
+        // someone else wrote in between - refetch sha and retry once
+        await loadTasks();
+        body.sha = currentSha;
+        const retry = await fetch(API_BASE, { method: "PUT", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body) });
+        if (!retry.ok) throw new Error("save_failed_" + retry.status);
+        const rj = await retry.json();
+        currentSha = rj.content.sha;
+        return;
+      }
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) throw new Error("bad_token");
+        throw new Error("save_failed_" + res.status);
+      }
+      const j = await res.json();
+      currentSha = j.content.sha;
+    }
+
+    function render(tasks) {
+      const open = tasks.filter((t) => !t.done).sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt || ""));
+      const done = tasks.filter((t) => t.done).sort((a, b) => (b.doneAt || "").localeCompare(a.doneAt || ""));
+      const ordered = open.concat(done);
+
+      countPill.innerHTML = "<b>" + open.length + "</b> open &middot; " + done.length + " done";
+
+      if (ordered.length === 0) {
+        listEl.innerHTML = '<div class="empty">No tasks yet. Add the first one above.</div>';
+        return;
+      }
+
+      listEl.innerHTML = ordered.map((t) => {
+        const who = t.addedBy ? '<span class="who">@' + escapeHtml(t.addedBy) + "</span>" : "";
+        const when = fmtTime(t.done ? t.doneAt : t.createdAt);
+        const check = t.done ? "&#10003;" : "";
+        return (
+          '<div class="task" data-done="' + !!t.done + '" data-id="' + t.id + '">' +
+            '<button class="check" data-action="toggle" data-id="' + t.id + '" aria-label="Toggle done">' + check + "</button>" +
+            '<div class="task-body">' +
+              '<div class="task-text">' + escapeHtml(t.text || "") + "</div>" +
+              '<div class="task-meta">' + who + (when ? "<span>" + when + "</span>" : "") + "</div>" +
+            "</div>" +
+            '<button class="del-btn" data-action="delete" data-id="' + t.id + '" aria-label="Delete task">&times;</button>' +
+          "</div>"
+        );
+      }).join("");
+    }
+
+    let latestTasks = [];
+    async function refresh(showLoading) {
+      try {
+        if (showLoading) listEl.innerHTML = '<div class="status">Loading tasks&hellip;</div>';
+        latestTasks = await loadTasks();
+        render(latestTasks);
+      } catch (e) {
+        listEl.innerHTML = '<div class="status">Couldn\'t load tasks (' + e.message + '). <a href="#" onclick="location.reload();return false;">Retry</a></div>';
+      }
+    }
+
+    refresh(true);
+    pollTimer = setInterval(() => refresh(false), 20000);
+
+    listEl.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+      const id = btn.getAttribute("data-id");
+      const action = btn.getAttribute("data-action");
+      requireKey(async () => {
+        try {
+          let tasks = latestTasks.slice();
+          if (action === "delete") {
+            tasks = tasks.filter((t) => t.id !== id);
+            await saveTasks(tasks, "Delete task " + id);
+          } else if (action === "toggle") {
+            tasks = tasks.map((t) => t.id === id ? Object.assign({}, t, { done: !t.done, doneAt: !t.done ? new Date().toISOString() : null }) : t);
+            await saveTasks(tasks, "Toggle task " + id);
+          }
+          latestTasks = tasks;
+          render(latestTasks);
+        } catch (err) {
+          if (err.message === "bad_token") {
+            alert("That write key was rejected by GitHub. Click \"Key\" at the top to update it.");
+          } else {
+            alert("Couldn't save that change - try again in a moment.");
+          }
+        }
+      });
+    });
+
+    addBtn.addEventListener("click", addTask);
+    textInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addTask(); });
+
+    function addTask() {
+      const text = textInput.value.trim();
+      if (!text) return;
+      requireKey(async () => {
+        const name = nameInput.value.trim();
+        try { localStorage.setItem("vp_tasks_name", name); } catch (e) {}
+        addBtn.disabled = true;
+        try {
+          const newTask = {
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+            text: text,
+            addedBy: name,
+            done: false,
+            createdAt: new Date().toISOString(),
+            doneAt: null
+          };
+          const tasks = latestTasks.concat([newTask]);
+          await saveTasks(tasks, "Add task: " + text.slice(0, 50));
+          latestTasks = tasks;
+          render(latestTasks);
+          textInput.value = "";
+          textInput.focus();
+        } catch (err) {
+          if (err.message === "bad_token") {
+            alert("That write key was rejected by GitHub. Click \"Key\" at the top to update it.");
+          } else {
+            alert("Couldn't add that task - try again in a moment.");
+          }
+        } finally {
+          addBtn.disabled = false;
+        }
+      });
+    }
+  }
+</script>
+</body>
+</html>
