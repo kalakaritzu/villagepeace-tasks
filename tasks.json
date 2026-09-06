@@ -1,3 +1,12 @@
 {
-  "tasks": []
+  "tasks": [
+    {
+      "id": "mtptgnk6kh6a2b",
+      "text": "sigma boy",
+      "addedBy": "KALAKARITZU",
+      "done": false,
+      "createdAt": "2026-09-06T12:57:18.150Z",
+      "doneAt": null
+    }
+  ]
 }
