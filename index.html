@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Villagepeace Tasks</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✅</text></svg>">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
   :root {
@@ -201,6 +202,14 @@
     try { localStorage.setItem("vp_tasks_token", t); } catch (e) {}
   }
 
+  // ---------- board state (declared early - a returning visitor whose
+  // password is already remembered calls initBoard() synchronously during
+  // page load, before code further down this script has run, so anything
+  // initBoard's body touches must exist before that point) ----------
+  let boardStarted = false;
+  let currentSha = null;
+  let pollTimer = null;
+
   // ---------- password gate ----------
   const pwInput = document.getElementById("pw");
   const pwError = document.getElementById("pwError");
@@ -262,10 +271,6 @@
   });
 
   // ---------- board ----------
-  let boardStarted = false;
-  let currentSha = null;
-  let pollTimer = null;
-
   function initBoard() {
     if (boardStarted) return;
     boardStarted = true;
