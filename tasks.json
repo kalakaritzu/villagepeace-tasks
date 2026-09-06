@@ -1,3 +1,12 @@
 {
-  "tasks": []
+  "tasks": [
+    {
+      "id": "mtpxa5qe3cpxg1",
+      "text": "fix /teammsg",
+      "addedBy": "KALAKARITZU",
+      "done": false,
+      "createdAt": "2026-09-06T14:44:13.574Z",
+      "doneAt": null
+    }
+  ]
 }
