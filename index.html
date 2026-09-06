@@ -377,18 +377,29 @@
       const id = btn.getAttribute("data-id");
       const action = btn.getAttribute("data-action");
       requireKey(async () => {
+        // optimistic update: apply the change and render it immediately,
+        // then let the actual GitHub write happen in the background - a
+        // commit round-trip is what was making checking a task off feel
+        // slow, not anything the UI itself needed to wait on
+        const previousTasks = latestTasks;
+        let tasks = latestTasks.slice();
+        if (action === "delete") {
+          tasks = tasks.filter((t) => t.id !== id);
+        } else if (action === "toggle") {
+          tasks = tasks.map((t) => t.id === id ? Object.assign({}, t, { done: !t.done, doneAt: !t.done ? new Date().toISOString() : null }) : t);
+        } else {
+          return;
+        }
+        latestTasks = tasks;
+        render(latestTasks);
+
         try {
-          let tasks = latestTasks.slice();
-          if (action === "delete") {
-            tasks = tasks.filter((t) => t.id !== id);
-            await saveTasks(tasks, "Delete task " + id);
-          } else if (action === "toggle") {
-            tasks = tasks.map((t) => t.id === id ? Object.assign({}, t, { done: !t.done, doneAt: !t.done ? new Date().toISOString() : null }) : t);
-            await saveTasks(tasks, "Toggle task " + id);
-          }
-          latestTasks = tasks;
-          render(latestTasks);
+          await saveTasks(tasks, (action === "delete" ? "Delete" : "Toggle") + " task " + id);
         } catch (err) {
+          // the write didn't actually go through - roll the UI back so it
+          // doesn't lie about what's saved
+          latestTasks = previousTasks;
+          render(latestTasks);
           if (err.message === "bad_token") {
             alert("That write key was rejected by GitHub. Click \"Key\" at the top to update it.");
           } else {
