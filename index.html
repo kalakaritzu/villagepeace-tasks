@@ -302,30 +302,56 @@
       return Array.isArray(parsed.tasks) ? parsed.tasks : [];
     }
 
-    async function saveTasks(tasks, message) {
-      const payload = { tasks: tasks };
+    async function putTasks(tasks, message) {
       const body = {
         message: message,
-        content: b64Encode(JSON.stringify(payload, null, 2)),
+        content: b64Encode(JSON.stringify({ tasks: tasks }, null, 2)),
         sha: currentSha
       };
       const res = await fetch(API_BASE, { method: "PUT", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body) });
-      if (res.status === 409 || res.status === 422) {
-        // someone else wrote in between - refetch sha and retry once
-        await loadTasks();
-        body.sha = currentSha;
-        const retry = await fetch(API_BASE, { method: "PUT", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body) });
-        if (!retry.ok) throw new Error("save_failed_" + retry.status);
-        const rj = await retry.json();
-        currentSha = rj.content.sha;
-        return;
-      }
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) throw new Error("bad_token");
-        throw new Error("save_failed_" + res.status);
+        const err = new Error("save_failed_" + res.status);
+        err.conflict = (res.status === 409 || res.status === 422);
+        throw err;
       }
       const j = await res.json();
       currentSha = j.content.sha;
+    }
+
+    // Two people (or two quick clicks - add then delete) can write around
+    // the same time. Rather than PUT a snapshot captured back when the
+    // click happened, this always re-fetches the true current list and
+    // replays just THIS mutation (mutationFn) on top of it, right before
+    // sending - so a fast add-then-delete can't have the add's write come
+    // back later and resurrect what the delete just removed. Writes are
+    // also serialized through one queue (see enqueueWrite below) so only
+    // one of these is ever in flight, keeping "true current list" true.
+    async function mutateAndSave(mutationFn, message) {
+      const fresh = await loadTasks();
+      const mutated = mutationFn(fresh);
+      try {
+        await putTasks(mutated, message);
+      } catch (err) {
+        if (!err.conflict) throw err;
+        // someone else committed in the gap between our fetch and our PUT -
+        // refetch again and replay the same mutation once more
+        const fresher = await loadTasks();
+        const remutated = mutationFn(fresher);
+        await putTasks(remutated, message);
+        return remutated;
+      }
+      return mutated;
+    }
+
+    // serializes all writes so each one's mutateAndSave starts only after
+    // the previous one has fully landed (or failed) - this is what makes
+    // "re-fetch the true current list" above actually true
+    let writeQueue = Promise.resolve();
+    function enqueueWrite(mutationFn, message) {
+      const result = writeQueue.then(() => mutateAndSave(mutationFn, message));
+      writeQueue = result.catch(() => {});
+      return result;
     }
 
     function render(tasks) {
@@ -377,29 +403,33 @@
       const id = btn.getAttribute("data-id");
       const action = btn.getAttribute("data-action");
       requireKey(async () => {
-        // optimistic update: apply the change and render it immediately,
-        // then let the actual GitHub write happen in the background - a
-        // commit round-trip is what was making checking a task off feel
-        // slow, not anything the UI itself needed to wait on
-        const previousTasks = latestTasks;
-        let tasks = latestTasks.slice();
+        // optimistic update: apply the change and render it immediately -
+        // a commit round-trip is what was making this feel slow, not
+        // anything the UI itself needed to wait on
+        let mutationFn;
         if (action === "delete") {
-          tasks = tasks.filter((t) => t.id !== id);
+          latestTasks = latestTasks.filter((t) => t.id !== id);
+          mutationFn = (tasks) => tasks.filter((t) => t.id !== id);
         } else if (action === "toggle") {
-          tasks = tasks.map((t) => t.id === id ? Object.assign({}, t, { done: !t.done, doneAt: !t.done ? new Date().toISOString() : null }) : t);
+          const current = latestTasks.find((t) => t.id === id);
+          const newDone = current ? !current.done : true;
+          const newDoneAt = newDone ? new Date().toISOString() : null;
+          latestTasks = latestTasks.map((t) => t.id === id ? Object.assign({}, t, { done: newDone, doneAt: newDoneAt }) : t);
+          // a fixed target value (not "flip whatever's there"), so this
+          // mutation means the same thing no matter when it actually runs
+          mutationFn = (tasks) => tasks.map((t) => t.id === id ? Object.assign({}, t, { done: newDone, doneAt: newDoneAt }) : t);
         } else {
           return;
         }
-        latestTasks = tasks;
         render(latestTasks);
 
         try {
-          await saveTasks(tasks, (action === "delete" ? "Delete" : "Toggle") + " task " + id);
+          await enqueueWrite(mutationFn, (action === "delete" ? "Delete" : "Toggle") + " task " + id);
         } catch (err) {
-          // the write didn't actually go through - roll the UI back so it
-          // doesn't lie about what's saved
-          latestTasks = previousTasks;
-          render(latestTasks);
+          // the write didn't actually go through - resync with whatever's
+          // really on GitHub rather than guessing at a rollback, since
+          // other changes may have queued on top of this one by now
+          try { latestTasks = await loadTasks(); render(latestTasks); } catch (e2) {}
           if (err.message === "bad_token") {
             alert("That write key was rejected by GitHub. Click \"Key\" at the top to update it.");
           } else {
@@ -421,7 +451,6 @@
 
         // optimistic: show the new task and clear the input right away,
         // let the GitHub commit happen in the background
-        const previousTasks = latestTasks;
         const newTask = {
           id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
           text: text,
@@ -430,19 +459,18 @@
           createdAt: new Date().toISOString(),
           doneAt: null
         };
-        const tasks = latestTasks.concat([newTask]);
-        latestTasks = tasks;
+        const mutationFn = (tasks) => tasks.concat([newTask]);
+        latestTasks = mutationFn(latestTasks);
         render(latestTasks);
         textInput.value = "";
         textInput.focus();
 
         try {
-          await saveTasks(tasks, "Add task: " + text.slice(0, 50));
+          await enqueueWrite(mutationFn, "Add task: " + text.slice(0, 50));
         } catch (err) {
-          // didn't actually save - roll back and give the text back so it
-          // isn't lost
-          latestTasks = previousTasks;
-          render(latestTasks);
+          // didn't actually save - resync with what's really on GitHub and
+          // give the text back so it isn't lost
+          try { latestTasks = await loadTasks(); render(latestTasks); } catch (e2) {}
           textInput.value = text;
           if (err.message === "bad_token") {
             alert("That write key was rejected by GitHub. Click \"Key\" at the top to update it.");
