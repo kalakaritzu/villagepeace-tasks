@@ -15,6 +15,14 @@
       "done": false,
       "createdAt": "2026-09-06T15:10:12.054Z",
       "doneAt": null
+    },
+    {
+      "id": "mtq13bkfi1feku",
+      "text": "allow items for players (chests, signs) since NBTs are now not allowed - but not all items (such as dispensers)",
+      "addedBy": "ivy",
+      "done": false,
+      "createdAt": "2026-09-06T16:30:53.007Z",
+      "doneAt": null
     }
   ]
 }
