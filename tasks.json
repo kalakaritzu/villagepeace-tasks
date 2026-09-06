@@ -7,6 +7,14 @@
       "done": false,
       "createdAt": "2026-09-06T14:44:13.574Z",
       "doneAt": null
+    },
+    {
+      "id": "mtpy7k9iv1avd0",
+      "text": "Add a disable command for /bm for either all or certain players",
+      "addedBy": "qwildq",
+      "done": false,
+      "createdAt": "2026-09-06T15:10:12.054Z",
+      "doneAt": null
     }
   ]
 }
