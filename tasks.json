@@ -31,6 +31,14 @@
       "done": false,
       "createdAt": "2026-09-06T16:31:25.355Z",
       "doneAt": null
+    },
+    {
+      "id": "mtq14lt70p5e5x",
+      "text": "/kill doesn't work against people in buildmode and in creative",
+      "addedBy": "ivy",
+      "done": false,
+      "createdAt": "2026-09-06T16:31:52.939Z",
+      "doneAt": null
     }
   ]
 }
