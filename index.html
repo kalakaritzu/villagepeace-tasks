@@ -418,30 +418,37 @@
       requireKey(async () => {
         const name = nameInput.value.trim();
         try { localStorage.setItem("vp_tasks_name", name); } catch (e) {}
-        addBtn.disabled = true;
+
+        // optimistic: show the new task and clear the input right away,
+        // let the GitHub commit happen in the background
+        const previousTasks = latestTasks;
+        const newTask = {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+          text: text,
+          addedBy: name,
+          done: false,
+          createdAt: new Date().toISOString(),
+          doneAt: null
+        };
+        const tasks = latestTasks.concat([newTask]);
+        latestTasks = tasks;
+        render(latestTasks);
+        textInput.value = "";
+        textInput.focus();
+
         try {
-          const newTask = {
-            id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-            text: text,
-            addedBy: name,
-            done: false,
-            createdAt: new Date().toISOString(),
-            doneAt: null
-          };
-          const tasks = latestTasks.concat([newTask]);
           await saveTasks(tasks, "Add task: " + text.slice(0, 50));
-          latestTasks = tasks;
-          render(latestTasks);
-          textInput.value = "";
-          textInput.focus();
         } catch (err) {
+          // didn't actually save - roll back and give the text back so it
+          // isn't lost
+          latestTasks = previousTasks;
+          render(latestTasks);
+          textInput.value = text;
           if (err.message === "bad_token") {
             alert("That write key was rejected by GitHub. Click \"Key\" at the top to update it.");
           } else {
             alert("Couldn't add that task - try again in a moment.");
           }
-        } finally {
-          addBtn.disabled = false;
         }
       });
     }
