@@ -79,6 +79,14 @@
       "done": false,
       "createdAt": "2026-09-08T03:36:16.218Z",
       "doneAt": null
+    },
+    {
+      "id": "mu62tovwubhwlx",
+      "text": "fix antimob (rn it kills the furthest player)",
+      "addedBy": "ivy",
+      "done": false,
+      "createdAt": "2026-09-17T22:03:41.756Z",
+      "doneAt": null
     }
   ]
 }
